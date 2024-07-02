@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.comments.model.mapper.CommentMapper">
+
+    <resultMap id="comment" type="commentDto">
+        <result column="comment_id" property="commentId"/>
+        <result column="review_id" property="reviewId"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="content" property="content"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reg_date" property="regDate"/>
+        <result column="mod_date" property="modDate"/>
+        <result column="is_like" property="isLike"/>
+    </resultMap>
+
+    <select id="getComments" parameterType="commentDto" resultMap="comment">
+        SELECT
+            comment_id,
+            review_id,
+            user_id,
+            (
+                SELECT name
+                FROM users
+                WHERE users.user_id = comments.user_id
+            ) as user_name,
+            content,
+            like_count,
+            reg_date,
+            mod_Date,
+            (
+                SELECT
+                    count(*)
+                FROM
+                    comment_likes
+                WHERE
+                    comment_likes.comment_id = comments.comment_id and
+                    comment_likes.user_id = #{userId}
+            ) as is_like
+        FROM comments
+        WHERE review_id = #{reviewId}
+    </select>
+
+    <select id="getMyComments" parameterType="int" resultMap="comment">
+        SELECT comment_id, review_id, user_id, content, like_count, reg_date, mod_Date
+        FROM comments
+        WHERE user_id = #{userId}
+    </select>
+    <insert id="registerComment" parameterType="commentDto">
+        INSERT INTO comments
+            (review_id, user_id, content)
+        values (#{reviewId}, #{userId}, #{content})
+    </insert>
+    <update id="modifyComment" parameterType="commentDto">
+        UPDATE comments
+        SET content = #{content}, mod_date = CURRENT_TIMESTAMP
+        where comment_id = #{commentId}
+    </update>
+    <delete id="deleteComment" parameterType="int">
+        DELETE from comments
+        WHERE comment_id = #{commentId}
+    </delete>
+
+    <update id="updateLikeCount" parameterType="int">
+        UPDATE comments
+        SET
+            like_count = (
+                SELECT count(comment_likes.user_id)
+                FROM comment_likes
+                WHERE comment_likes.comment_id = #{commentId}
+            )
+        WHERE comment_id = #{commentId};
+    </update>
+
+    <insert id="addLike"  parameterType="commentLikeDto">
+        INSERT INTO comment_likes
+            (comment_id, user_id) values (#{commentId}, #{userId})
+    </insert>
+
+    <delete id="deleteLike" parameterType="commentLikeDto">
+        DELETE
+        FROM
+            comment_likes
+        WHERE
+            comment_id = #{commentId}
+          and user_id = #{userId}
+    </delete>
+</mapper>

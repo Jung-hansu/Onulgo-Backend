@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.plans.model.mapper.PlanMapper">
+
+    <resultMap id="user" type="userDto">
+        <result column="user_id" property="userId"/>
+        <result column="email" property="email"/>
+        <result column="password" property="password"/>
+        <result column="name" property="name"/>
+        <result column="address" property="address"/>
+        <result column="phone_number" property="phoneNumber"/>
+        <result column="is_manager" property="isManager"/>
+    </resultMap>
+
+    <resultMap id="plan" type="planDto">
+        <result column="plan_id" property="planId"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="desc" property="desc"/>
+        <result column="attractions" property="attractions"/>
+        <result column="is_public" property="isPublic"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="scrap_count" property="scrapCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="reg_date" property="regDate"/>
+        <result column="mod_date" property="modDate"/>
+    </resultMap>
+
+    <select id="getAllPlans" resultMap="plan">
+        SELECT
+            plan_id,
+            user_id,
+            title,
+            `desc`,
+            attractions,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans
+        ORDER BY
+            reg_date DESC
+        LIMIT
+            10
+    </select>
+
+    <select id="getPlan" parameterType="int" resultMap="plan">
+        SELECT
+            plan_id,
+            user_id,
+            title,
+            `desc`,
+            attractions,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans
+        WHERE
+            plan_id = #{planId}
+    </select>
+
+    <insert id="registerPlan" parameterType="planDto">
+        INSERT INTO
+            plans (user_id, title, `desc`, attractions, is_public, start_date, end_date)
+        VALUES
+            (#{userId}, #{title}, #{desc}, #{attractions}, #{isPublic}, #{startDate}, #{endDate});
+
+        <selectKey keyProperty="planId" resultType="int" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <delete id="deletePlan" parameterType="planDto">
+        DELETE
+        FROM
+            plans
+        WHERE
+            plan_id = #{planId}
+    </delete>
+
+    <update id="modifyPlan" parameterType="planDto">
+        UPDATE
+            plans
+        SET
+            title = #{title},
+            `desc` = #{desc},
+            attractions = #{attractions},
+            is_public = #{isPublic},
+            start_date = #{startDate},
+            end_date = #{endDate}
+        WHERE
+            plan_id = #{planId};
+
+
+    </update>
+
+    <select id="getParticipants" parameterType="int" resultMap="user">
+        SELECT DISTINCT
+            u.user_id,
+            email,
+            name,
+            address,
+            phone_number,
+            is_manager,
+            u.reg_date,
+            last_login
+        FROM
+            participants pt
+            JOIN users u on pt.user_id = u.user_id
+        WHERE
+            pt.plan_id = #{planId}
+    </select>
+
+    <select id="getNumOfParticipants" parameterType="int" resultType="int">
+        SELECT
+            COUNT(user_id)
+        FROM
+            participants
+        WHERE
+            plan_id = #{planId}
+    </select>
+
+    <insert id="inviteToPlan" parameterType="planDto">
+        INSERT IGNORE INTO
+            participants (plan_id, user_id)
+        VALUES
+            <foreach collection="joinUsers" item="user" separator=",">
+                (#{planId}, #{user.userId})
+            </foreach>
+    </insert>
+
+    <delete id="expelFromPlan" parameterType="planDto">
+        DELETE
+        FROM
+            participants
+        WHERE
+            plan_id = #{planId} AND
+            user_id IN
+            <foreach collection="joinUsers" item="user" open="(" separator="," close=")">
+                #{user.userId}
+            </foreach>
+    </delete>
+
+    <select id="getJoinedPlans" parameterType="int" resultMap="plan">
+        SELECT
+            pl.plan_id,
+            pl.user_id,
+            title,
+            `desc`,
+            attractions,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans pl
+            JOIN participants pt ON pl.plan_id = pt.plan_id
+        WHERE
+            pt.user_id = #{userId}
+    </select>
+
+    <select id="getJoinUsers" parameterType="int" resultMap="user">
+        SELECT DISTINCT
+            u.user_id,
+            email,
+            name,
+            address,
+            phone_number,
+            is_manager,
+            u.reg_date,
+            last_login
+        FROM
+            users u
+            JOIN participants p ON u.user_id = p.user_id
+        WHERE
+            p.plan_id = #{planId}
+    </select>
+
+    <select id="isOwnPlan" parameterType="planDto" resultType="boolean">
+        SELECT
+            COUNT(plan_id) = 1
+        FROM
+            plans
+        WHERE
+            plan_id = #{planId} AND user_id = #{userId}
+    </select>
+
+    <update id="doLike" parameterType="planDto">
+        UPDATE
+            plans
+        SET
+            like_count = like_count + 1
+        WHERE
+            plan_id = #{planId};
+
+        INSERT IGNORE INTO
+            plan_likes (plan_id, user_id)
+        VALUE
+            (#{planId}, #{userId})
+    </update>
+
+    <update id="undoLike" parameterType="planDto">
+        UPDATE
+            plans
+        SET
+            like_count = like_count - 1
+        WHERE
+            plan_id = #{planId};
+
+        DELETE
+        FROM
+            plan_likes
+        WHERE
+            plan_id = #{planId} AND user_id = #{userId}
+    </update>
+
+    <update id="doScrap" parameterType="planDto">
+        UPDATE
+            plans
+        SET
+            scrap_count = scrap_count + 1
+        WHERE
+            plan_id = #{planId};
+
+        INSERT IGNORE INTO
+            plan_scraps (plan_id, user_id)
+        VALUE
+            (#{planId}, #{userId})
+    </update>
+
+    <update id="undoScrap" parameterType="planDto">
+        UPDATE
+            plans
+        SET
+            scrap_count = scrap_count - 1
+        WHERE
+            plan_id = #{planId};
+
+        DELETE
+        FROM
+            plan_scraps
+        WHERE
+            plan_id = #{planId} AND user_id = #{userId}
+    </update>
+
+    <update id="addViewCount" parameterType="int">
+        UPDATE
+            plans
+        SET
+            view_count = view_count + 1
+        WHERE
+            plan_id = #{planId}
+    </update>
+
+    <select id="getScrapPlans" parameterType="int" resultMap="plan">
+        SELECT
+            plan_id,
+            user_id,
+            title,
+            `desc`,
+            attractions,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans
+        WHERE
+            plan_id IN (
+                SELECT plan_scraps.plan_id
+                FROM plan_scraps
+                WHERE plan_scraps.user_id = #{userId}
+            )
+        ORDER BY
+            reg_date DESC
+        LIMIT
+            10
+    </select>
+</mapper>

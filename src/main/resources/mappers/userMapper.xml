@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.users.model.mapper.UserMapper">
+
+    <resultMap id="user" type="userDto">
+        <result column="user_id" property="userId"/>
+        <result column="email" property="email"/>
+        <result column="password" property="password"/>
+        <result column="name" property="name"/>
+        <result column="address" property="address"/>
+        <result column="phone_number" property="phoneNumber"/>
+        <result column="is_manager" property="isManager"/>
+        <result column="reg_date" property="regDate"/>
+    </resultMap>
+
+    <resultMap id="plan" type="planDto">
+        <result column="plan_id" property="planId"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="desc" property="desc"/>
+        <result column="attractions" property="attractions"/>
+        <result column="is_public" property="isPublic"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="scrap_count" property="scrapCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="reg_date" property="regDate"/>
+        <result column="mod_date" property="modDate"/>
+    </resultMap>
+
+    <resultMap id="review" type="reviewDto">
+        <result column="review_id" property="reviewId"/>
+        <result column="plan_id" property="planId"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="scrap_count" property="scrapCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reg_date" property="regDate"/>
+        <result column="mod_date" property="modDate"/>
+    </resultMap>
+
+    <resultMap id="comment" type="commentDto">
+        <result column="comment_id" property="commentId"/>
+        <result column="review_id" property="reviewId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="reg_date" property="regDate"/>
+        <result column="mod_date" property="modDate"/>
+    </resultMap>
+
+    <insert id="registerUser" parameterType="userDto">
+        INSERT INTO users (email, password, name, address, phone_number, salt)
+        VALUES (#{email}, #{password}, #{name}, #{address}, #{phoneNumber}, #{salt});
+
+        INSERT INTO tokens (user_id)
+        SELECT LAST_INSERT_ID()
+    </insert>
+
+    <select id="checkUserEmail" parameterType="string" resultType="boolean">
+        SELECT
+            COUNT(email) = 0 AS isAvailable
+        FROM
+            users
+        WHERE
+            email = #{email}
+    </select>
+
+    <select id="findUserByEmail" parameterType="string" resultMap="user">
+        SELECT
+            user_id,
+            email,
+            name,
+            address,
+            phone_number,
+            is_manager,
+            reg_date,
+            last_login
+        FROM
+            users
+        WHERE
+            email = #{email}
+    </select>
+
+    <update id="updateUser" parameterType="userDto">
+        UPDATE
+            users
+        SET
+            email = #{email},
+            password = #{password},
+            name = #{name},
+            address = #{address},
+            phone_number = #{phoneNumber}
+        WHERE
+            user_id = #{userId}
+    </update>
+
+    <select id="getUserInfo" parameterType="int" resultMap="user">
+        SELECT
+            user_id,
+            email,
+            name,
+            address,
+            phone_number,
+            is_manager,
+            reg_date,
+            last_login
+        FROM
+            users
+        WHERE
+            user_id = #{userId}
+    </select>
+
+    <select id="checkUserPassword" parameterType="userDto" resultType="boolean">
+        SELECT
+            COUNT(user_id) = 1 AS isMatched
+        FROM
+            users
+        WHERE
+            user_id = #{userId} AND password = #{password}
+    </select>
+
+    <delete id="deleteUser" parameterType="int">
+        DELETE
+        FROM
+           users
+        WHERE
+            user_id = #{userId};
+
+        DELETE
+        FROM
+            tokens
+        WHERE
+            user_id = #{userId}
+    </delete>
+
+    <select id="getPlans" parameterType="int" resultMap="plan">
+        SELECT
+            plan_id,
+            user_id,
+            title,
+            `desc`,
+            attractions,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans
+        WHERE
+            user_id = #{userId};
+    </select>
+
+    <select id="getAllDateOfPlans" parameterType="list" resultMap="plan">
+        SELECT
+            start_date,
+            end_date
+        FROM
+            plans
+        WHERE
+            user_id in
+            <foreach collection="participantIds" item="participant_id" open="(" separator="," close=")">
+                #{participant_id}
+            </foreach>
+    </select>
+
+    <select id="getReviews" parameterType="int" resultMap="review">
+        SELECT
+            review_id,
+            plan_id,
+            user_id,
+            title,
+            content,
+            view_count,
+            scrap_count,
+            like_count,
+            reg_date,
+            mod_date
+        FROM
+            reviews
+        WHERE
+            user_id = #{userId}
+    </select>
+
+    <select id="getComments" parameterType="int" resultMap="comment">
+        SELECT
+            comment_id,
+            review_id,
+            user_id,
+            content,
+            like_count,
+            reg_date,
+            mod_date
+        FROM
+            comments
+        WHERE
+            user_id = #{userId}
+    </select>
+
+    <select id="getScrapPlans" parameterType="int" resultMap="plan">
+        SELECT
+            plan_id,
+            user_id,
+            title,
+            `desc`,
+            is_public,
+            view_count,
+            scrap_count,
+            like_count,
+            start_date,
+            end_date,
+            reg_date,
+            mod_date
+        FROM
+            plans
+        WHERE
+            user_id = #{userId};
+    </select>
+
+    <select id="getScrapReviews" parameterType="int" resultMap="review">
+        SELECT
+            review_id,
+            plan_id,
+            user_id,
+            title,
+            content,
+            view_count,
+            scrap_count,
+            like_count,
+            reg_date,
+            mod_date
+        FROM
+            reviews
+        WHERE
+            user_id = #{userId}
+    </select>
+
+</mapper>
