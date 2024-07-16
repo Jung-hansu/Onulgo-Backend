@@ -19,6 +19,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;

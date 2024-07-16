@@ -32,6 +32,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/reviews")
 @AllArgsConstructor
+@CrossOrigin(origins = "*")
 public class ReviewController {
 
     private final ReviewService reviewService;

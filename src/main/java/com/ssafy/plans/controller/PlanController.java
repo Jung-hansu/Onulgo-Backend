@@ -17,6 +17,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/plans")
+@CrossOrigin(origins = "*")
 public class PlanController {
 
     private final PlanService planService;

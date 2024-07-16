@@ -20,6 +20,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/comments")
+@CrossOrigin(origins = "*")
 public class CommentController {
     private final CommentService commentService;
     private final JWTUtil jwtUtil;

@@ -6,15 +6,14 @@ import com.ssafy.gemini.model.GeminiDto;
 import com.ssafy.gemini.model.service.GeminiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/ai")
+@CrossOrigin(origins = "*")
 public class GeminiController {
     private final GeminiService geminiService;
 
